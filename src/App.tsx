@@ -1,75 +1,70 @@
-import { useState, useEffect, useRef, useMemo } from "react"; //importamos todos los hooks necesarios
+import { useState, useEffect, useRef, useMemo, useReducer } from "react"; //importamos todos los hooks necesarios
 import "./App.css";
 import axios from "axios";
 import ProductList from "./components/ProductList";
 import { BiSolidCommentError } from "react-icons/bi";
+import type Product from "./helpers/interfaces";
+import type { FetchState } from "./helpers/interfaces";
 
-export interface Rating {
-  count: number;
-  rate: number;
-}
+const initialState: FetchState = {
+  data: [],
+  loading: true,
+  error: null,
+};
 
-export interface Product {
-  id: number;
-  title: string;
-  price: number;
-  category: string;
-  description: string;
-  imageUrl: string;
-  rating: Rating;
+function fetchReducer(state: FetchState, action: any): FetchState {
+  switch (action.type) {
+    case "FETCH_INIT":
+      return { ...state, loading: true, error: null };
+    case "FETCH_SUCCESS":
+      return { ...state, loading: false, data: action.payload };
+    case "FETCH_FAILURE":
+      return { ...state, loading: false, error: action.payload };
+    default:
+      return state;
+  }
 }
 
 function App() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>(null);
+  const [state, dispatch] = useReducer(fetchReducer, initialState);
   const [searchTerm, setSearchTerm] = useState<string>(""); //👈🏼 estado para la busqueda
   const searchInputRef = useRef<HTMLInputElement>(null); // ref para el input
 
   useEffect(() => {
     const fetchProducts = async (): Promise<void> => {
+      dispatch({ type: "FETCH_INIT" });
       try {
         const response = await axios.get<Product[]>(
           "https://fakestoreapi.com/products"
         );
-        setProducts(response.data);
-        /* setLoading(false); */ // colocado en el finally
+        console.log(response);
+        dispatch({ type: "FETCH_SUCCESS", payload: response.data });
       } catch (error) {
-        if (error instanceof Error) {
-          /*setLoading(false);*/ /// colocado en el finally
-          setError(error.message);
-        } else {
-          setError("Hubo un error en la consulta");
-        }
-        console.log("Error al consultar los usuarios");
-      } finally {
-        setLoading(false); //👈🏼 Se ejecuta siempre, bueno, para quietar el loading
+        const message = "Hubo un error";
+        dispatch({ type: "FETCH_FAILURE", payload: message });
       }
     };
     fetchProducts();
   }, []);
 
-  // 👇🏼 lo usamos para poner el foco en el input To Do: revisar
+  // 👇🏼 lo usamos para poner el foco en el input
   useEffect(() => {
     searchInputRef.current?.focus();
-  }, []);
+  }, [state.loading]);
 
   // 👇🏼 lo usamos para filtrar eficientemente los productos
   const filteredProducts = useMemo(() => {
-    console.log("filtrando usuarios");
-    return products.filter(
-      (
-        product // ToDO: Analizar si en vez de includes() usamos mejor startsWith
-      ) =>
+    return state.data.filter(
+      (product) =>
         product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.category.toLowerCase().startsWith(searchTerm.toLowerCase()) ||
         product.description.toLowerCase().startsWith(searchTerm.toLowerCase())
     );
-  }, [products, searchTerm]); //👈🏼 Dependencias: se recalcula - solo si products o searchTerms cambian
+  }, [state.data, searchTerm]); //👈🏼 Dependencias: se recalcula - solo si products o searchTerms cambian
 
   // console.log(products);
 
-  if (loading) {
+  if (state.loading) {
     return (
       <div>
         <h2>Loading....</h2>
@@ -78,7 +73,7 @@ function App() {
     );
   }
 
-  if (error) {
+  if (state.error) {
     return (
       <p>
         <span className="text-red-500">

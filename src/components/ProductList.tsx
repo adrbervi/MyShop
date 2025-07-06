@@ -1,4 +1,4 @@
-import type { Product } from "../App";
+import type Product from "../helpers/interfaces";
 import ProductCard from "./ProductCard";
 
 interface ProductList {
