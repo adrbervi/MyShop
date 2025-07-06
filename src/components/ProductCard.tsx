@@ -30,12 +30,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </p>
       </div>
 
-      <div>
-        <p className="text-gray-800">
-          <strong>Image: </strong>
-          {product.image}
-        </p>
-      </div>
+      <div></div>
 
       <p className="text-gray-800">
         <strong>Description: </strong>
